@@ -5,6 +5,10 @@ on:
     branches: [ main, "feature/**" ]
   pull_request:
 
+env:
+  # ⚠️ Alles lowercase halten!
+  GHCR_REPO: ghcr.io/${{ github.repository_owner }}/online-shop
+
 jobs:
 
   backend:
@@ -83,8 +87,7 @@ jobs:
         with:
           languages: java, javascript
 
-      # ❌ KEIN Autobuild (du hast mehrere Projekte!)
-      # ✅ Custom Builds:
+      # ✅ Custom Builds (weil mehrere Projekte)
       - name: Build Backend for CodeQL
         working-directory: ./Online-Shop-backend
         run: mvn -B -DskipTests clean package
@@ -124,18 +127,19 @@ jobs:
         with:
           context: ./Online-Shop-backend
           push: true
-          tags: ghcr.io/${{ github.repository }}/onlineshop-backend:latest
+          tags: ${{ env.GHCR_REPO }}/onlineshop-backend:latest
 
       - name: Build & Push Payment Service Image
         uses: docker/build-push-action@v6
         with:
           context: ./payment-service
           push: true
-          tags: ghcr.io/${{ github.repository }}/payment-service:latest
+          tags: ${{ env.GHCR_REPO }}/payment-service:latest
 
       - name: Build & Push Frontend Image
         uses: docker/build-push-action@v6
         with:
           context: ./online-shop-frontend
           push: true
-          tags: ghcr.io/${{ github.repository }}/onlineshop-frontend:latest
+          tags: ${{ env.GHCR_REPO }}/onlineshop-frontend:latest
+
