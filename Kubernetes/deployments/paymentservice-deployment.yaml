@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paymentservice
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paymentservice
+  template:
+    metadata:
+      labels:
+        app: paymentservice
+    spec:
+      containers:
+        - name: paymentservice
+          image: ise_gruppen_project_latest-paymentservice:latest
+          imagePullPolicy: Never   # <-- hier hinzufügen
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: paymentservice-config

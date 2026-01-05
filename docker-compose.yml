@@ -16,7 +16,7 @@ services:
       retries: 20
 
   postgres:
-    image: postgres:16
+    image: postgres:17
     environment:
       POSTGRES_DB: online_shop
       POSTGRES_USER: postgres

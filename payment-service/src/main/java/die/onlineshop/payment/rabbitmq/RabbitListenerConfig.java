@@ -21,7 +21,7 @@ public class RabbitListenerConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
 
-        // ✅ DAS ist wichtig:
+        // DAS ist wichtig:
         factory.setMessageConverter(converter);
 
         factory.setDefaultRequeueRejected(false);
