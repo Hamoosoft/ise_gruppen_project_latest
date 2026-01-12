@@ -18,19 +18,16 @@ public class RabbitConfig {
     public static final String PAYMENT_COMMANDS_DLQ = "payment.commands.dlq";
     public static final String PAYMENT_COMMANDS_DLQ_ROUTING_KEY = "payment.commands.dlq";
 
-    // Dead Letter Exchange
     @Bean
     public DirectExchange paymentDlxExchange() {
         return new DirectExchange(PAYMENT_DLX_EXCHANGE);
     }
 
-    // Dead Letter Queue
     @Bean
     public Queue paymentCommandsDlq() {
         return QueueBuilder.durable(PAYMENT_COMMANDS_DLQ).build();
     }
 
-    // Binding DLQ an DLX
     @Bean
     public Binding paymentCommandsDlqBinding(Queue paymentCommandsDlq, DirectExchange paymentDlxExchange) {
         return BindingBuilder.bind(paymentCommandsDlq)
@@ -38,7 +35,6 @@ public class RabbitConfig {
                 .with(PAYMENT_COMMANDS_DLQ_ROUTING_KEY);
     }
 
-    // Queue für Payment Commands mit TTL + DLQ
     @Bean
     public Queue paymentCommandsQueue() {
         return QueueBuilder.durable(PAYMENT_COMMANDS_QUEUE)
@@ -48,19 +44,16 @@ public class RabbitConfig {
                 .build();
     }
 
-    // Queue für Payment Results (ohne TTL)
     @Bean
     public Queue paymentResultsQueue() {
         return QueueBuilder.durable(PAYMENT_RESULTS_QUEUE).build();
     }
 
-    // JSON Converter
     @Bean
     public Jackson2JsonMessageConverter jsonConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
-    // RabbitTemplate mit JSON Converter
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory cf, Jackson2JsonMessageConverter converter) {
         RabbitTemplate template = new RabbitTemplate(cf);
