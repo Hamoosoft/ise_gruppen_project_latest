@@ -15,6 +15,25 @@ spec:
       containers:
         - name: frontend
           image: ise_gruppen_project_latest-frontend:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 10
           ports:
-            - containerPort: 5173
+            - containerPort: 80

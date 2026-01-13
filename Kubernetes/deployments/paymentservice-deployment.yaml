@@ -15,7 +15,26 @@ spec:
       containers:
         - name: paymentservice
           image: ise_gruppen_project_latest-paymentservice:latest
-          imagePullPolicy: Never   # <-- hier hinzufügen
+          imagePullPolicy: IfNotPresent   # <-- hier hinzufügen
+          resources:
+            requests:
+              cpu: "150m"
+              memory: "256Mi"
+            limits:
+              cpu: "300m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 10
           ports:
             - containerPort: 8081
           envFrom:
