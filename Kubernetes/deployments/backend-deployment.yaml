@@ -36,28 +36,21 @@ spec:
               exit 1
       containers:
         - name: backend
-          image: ise_gruppen_project_latest-backend:v9
-          imagePullPolicy: IfNotPresent
+          image: ise_gruppen_project_latest-backend:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 9090
-          resources:
-            requests:
-              cpu: "250m"
-              memory: "512Mi"
-            limits:
-              cpu: "500m"
-              memory: "1Gi"
           livenessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/liveness
               port: 9090
-            initialDelaySeconds: 30
+            initialDelaySeconds: 40
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /actuator/health
+              path: /actuator/health/readiness
               port: 9090
-            initialDelaySeconds: 15
+            initialDelaySeconds: 40
             periodSeconds: 10
           envFrom:
             - configMapRef:

@@ -30,11 +30,9 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/actuator/**").permitAll() // Actuator freigeben
-                        .requestMatchers("/api/products/**").permitAll()
-                        .requestMatchers("/api/orders/**").permitAll() // aktuell vielleicht noch frei
-                        .requestMatchers("/api/users/**").permitAll()
-                        .requestMatchers("/api/addresses/**").permitAll()
+                        .requestMatchers("/api/products/**").permitAll() // Lesen für alle
+                        // .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("ADMIN") //
+                        // Optional
                         .anyRequest().authenticated())
 
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -46,10 +44,5 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
-    }
-
-    @Bean
-    public org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer webSecurityCustomizer() {
-        return (web) -> web.ignoring().requestMatchers("/actuator/**");
     }
 }

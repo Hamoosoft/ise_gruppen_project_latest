@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 
 @Service
 public class OrderService {
@@ -26,8 +27,8 @@ public class OrderService {
     private final RabbitTemplate rabbitTemplate;
 
     public OrderService(OrderRepository orderRepository,
-                        ProductRepository productRepository,
-                        RabbitTemplate rabbitTemplate) {
+            ProductRepository productRepository,
+            RabbitTemplate rabbitTemplate) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.rabbitTemplate = rabbitTemplate;
@@ -47,7 +48,8 @@ public class OrderService {
 
         for (CreateOrderRequest.OrderItemRequest itemRequest : request.getItems()) {
             Product product = productRepository.findById(itemRequest.getProductId())
-                    .orElseThrow(() -> new IllegalArgumentException("Produkt nicht gefunden: " + itemRequest.getProductId()));
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Produkt nicht gefunden: " + itemRequest.getProductId()));
 
             OrderItem item = new OrderItem();
             item.setProduct(product);
@@ -60,25 +62,38 @@ public class OrderService {
 
         order.setTotalAmount(total);
 
-        //  einheitlich: orderStatus
+        // einheitlich: orderStatus
         order.setOrderStatus(OrderStatus.PENDING_PAYMENT);
 
-        //  zuerst speichern (damit Order-ID existiert)
+        // zuerst speichern (damit Order-ID existiert)
         Order saved = orderRepository.save(order);
 
-        //  PaymentCommand in RabbitMQ senden
+        // PaymentCommand in RabbitMQ senden
         PaymentCommand cmd = new PaymentCommand(
                 saved.getId(),
                 total,
                 "EUR",
                 saved.getCustomerEmail(),
-                request.getPaymentMethod() != null ? request.getPaymentMethod() : "INVOICE"
-        );
+                request.getPaymentMethod() != null ? request.getPaymentMethod() : "INVOICE");
 
-        rabbitTemplate.convertAndSend(RabbitConfig.PAYMENT_COMMANDS_QUEUE, cmd);
+        sendPaymentCommand(cmd);
 
-        //  sofort antworten (User merkt Payment-Probleme nicht)
+        // sofort antworten (User merkt Payment-Probleme nicht)
         return mapToResponse(saved);
+    }
+
+    @CircuitBreaker(name = "paymentService", fallbackMethod = "fallbackPayment")
+    public void sendPaymentCommand(PaymentCommand cmd) {
+        rabbitTemplate.convertAndSend(RabbitConfig.PAYMENT_COMMANDS_QUEUE, cmd);
+    }
+
+    public void fallbackPayment(PaymentCommand cmd, Throwable t) {
+        System.err.println("FALLBACK TRIGGERED for Order " + cmd.getOrderId() + ". RabbitMQ unavailable. Error: "
+                + t.getMessage());
+        // Hier könnte man den OrderStatus auf ERROR setzen:
+        // Order o = orderRepository.findById(cmd.getOrderId()).orElse(null);
+        // if (o != null) { o.setOrderStatus(OrderStatus.PAYMENT_FAILED);
+        // orderRepository.save(o); }
     }
 
     public List<OrderResponse> getOrdersByEmail(String email) {
@@ -96,9 +111,8 @@ public class OrderService {
         OrderResponse response = new OrderResponse();
         response.setId(order.getId());
 
-        //  Status richtig mappen
+        // Status richtig mappen
         response.setStatus(order.getOrderStatus() != null ? order.getOrderStatus().name() : "UNKNOWN");
-
 
         response.setCustomerName(order.getCustomerName());
         response.setCustomerEmail(order.getCustomerEmail());

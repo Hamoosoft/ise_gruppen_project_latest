@@ -10,12 +10,12 @@
         <collectionProp name="Arguments.arguments">
           <elementProp name="HOST" elementType="Argument">
             <stringProp name="Argument.name">HOST</stringProp>
-            <stringProp name="Argument.value">localhost</stringProp> <!-- Change IP if running against K8s NodePort/Ingress -->
+            <stringProp name="Argument.value">${__P(HOST,localhost)}</stringProp> <!-- Change IP if running against K8s NodePort/Ingress -->
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="PORT" elementType="Argument">
             <stringProp name="Argument.name">PORT</stringProp>
-            <stringProp name="Argument.value">30001</stringProp> <!-- Backend NodePort -->
+            <stringProp name="Argument.value">${__P(PORT,30001)}</stringProp> <!-- Backend NodePort -->
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
         </collectionProp>
