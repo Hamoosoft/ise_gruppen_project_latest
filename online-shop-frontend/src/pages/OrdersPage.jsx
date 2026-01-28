@@ -6,78 +6,60 @@ export default function OrdersPage({ authUser }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  if (!authUser) {
-    return (
-      <div>
-        <div className="page-header">
-          <h2>Meine Bestellungen</h2>
-        </div>
-        <div className="card orders-empty-card">
-          <p className="info-text">
-            Du bist nicht eingeloggt. Bitte melde dich an, um deine Bestellungen zu sehen.
-          </p>
-          <div style={{ marginTop: "0.8rem" }}>
-            <Link to="/login" className="btn btn-primary">
-              Zum Login
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   useEffect(() => {
-  if (!authUser) return;
+    if (!authUser) return;
 
-  let intervalId;
+    let intervalId;
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    setError("");
+    const fetchOrders = async () => {
+      setLoading(true);
+      setError("");
 
-    try {
-      const response = await fetch(
-        `http://localhost:9090/api/orders?email=${encodeURIComponent(
-          authUser.email
-        )}`
-      );
+      try {
+        const response = await fetch(
+          `http://localhost:9090/api/orders?email=${encodeURIComponent(
+            authUser.email
+          )}`
+        );
 
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Fehler beim Laden der Bestellungen");
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(text || "Fehler beim Laden der Bestellungen");
+        }
+
+        const data = await response.json();
+        const list = Array.isArray(data) ? data : [];
+        setOrders(list);
+
+        // 🔁 Prüfen, ob noch offene Zahlungen existieren
+        const hasPending = list.some((o) =>
+          (o.status || "").toUpperCase().includes("PENDING")
+        );
+
+        // Wenn keine offenen Zahlungen mehr → Polling stoppen
+        if (!hasPending && intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      } catch (err) {
+        setError(err.message || "Unbekannter Fehler beim Laden der Bestellungen");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const data = await response.json();
-      const list = Array.isArray(data) ? data : [];
-      setOrders(list);
+    // Initial laden
+    fetchOrders();
 
-      // 🔁 Prüfen, ob noch offene Zahlungen existieren
-      const hasPending = list.some((o) =>
-        (o.status || "").toUpperCase().includes("PENDING")
-      );
+    // 🔁 Alle 3 Sekunden neu laden
+    intervalId = setInterval(fetchOrders, 15000);
 
-      // Wenn keine offenen Zahlungen mehr → Polling stoppen
-      if (!hasPending && intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-      }
-    } catch (err) {
-      setError(err.message || "Unbekannter Fehler beim Laden der Bestellungen");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initial laden
-  fetchOrders();
-
-  // 🔁 Alle 3 Sekunden neu laden
-  intervalId = setInterval(fetchOrders, 15000);
-
-  return () => {
-    if (intervalId) clearInterval(intervalId);
-  };
-}, [authUser.email]);
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [authUser]);
 
 
   // Zusammenfassung (Anzahl + Gesamtumsatz)
@@ -101,34 +83,34 @@ export default function OrdersPage({ authUser }) {
 
   // Status → Label + CSS-Klasse
   const getStatusInfo = (order) => {
-  const raw = (order.status || "").toUpperCase();
+    const raw = (order.status || "").toUpperCase();
 
-  if (!raw || raw === "PENDING_PAYMENT") {
+    if (!raw || raw === "PENDING_PAYMENT") {
+      return {
+        label: "Wird bezahlt…",
+        className: "status-pill status-pending"
+      };
+    }
+
+    if (raw === "PAID") {
+      return {
+        label: "Bezahlt",
+        className: "status-pill status-completed"
+      };
+    }
+
+    if (raw === "PAYMENT_FAILED") {
+      return {
+        label: "Zahlung fehlgeschlagen",
+        className: "status-pill status-cancelled"
+      };
+    }
+
     return {
-      label: "Wird bezahlt…",
-      className: "status-pill status-pending"
+      label: raw,
+      className: "status-pill status-default"
     };
-  }
-
-  if (raw === "PAID") {
-    return {
-      label: "Bezahlt",
-      className: "status-pill status-completed"
-    };
-  }
-
-  if (raw === "PAYMENT_FAILED") {
-    return {
-      label: "Zahlung fehlgeschlagen",
-      className: "status-pill status-cancelled"
-    };
-  }
-
-  return {
-    label: raw,
-    className: "status-pill status-default"
   };
-};
 
 
   return (

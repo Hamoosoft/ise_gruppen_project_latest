@@ -9,15 +9,13 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-
 @Configuration
 public class RabbitListenerConfig {
 
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
             ConnectionFactory connectionFactory,
-            Jackson2JsonMessageConverter converter
-    ) {
+            Jackson2JsonMessageConverter converter) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
 
@@ -29,11 +27,10 @@ public class RabbitListenerConfig {
 
         factory.setAdviceChain(
                 RetryInterceptorBuilder.stateless()
-                        .maxRetries(3)
+                        .maxAttempts(3)
                         .backOffOptions(500, 2.0, 5000)
                         .recoverer(new RejectAndDontRequeueRecoverer())
-                        .build()
-        );
+                        .build());
 
         return factory;
     }

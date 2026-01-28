@@ -17,21 +17,14 @@ export default function AdminProductsPage({ authUser }) {
     imageUrl: "",
   });
 
-  if (!isAdmin) {
-    return (
-      <div className="card">
-        <h2>Kein Zugriff</h2>
-        <p className="info-text">
-          Dieser Bereich ist nur für Administratoren (Rolle ADMIN) sichtbar.
-        </p>
-      </div>
-    );
-  }
+
 
   useEffect(() => {
-    loadProducts();
+    if (isAdmin) {
+      loadProducts();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAdmin]);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -156,6 +149,17 @@ export default function AdminProductsPage({ authUser }) {
     }
   };
 
+  if (!isAdmin) {
+    return (
+      <div className="card">
+        <h2>Kein Zugriff</h2>
+        <p className="info-text">
+          Dieser Bereich ist nur für Administratoren (Rolle ADMIN) sichtbar.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -237,8 +241,8 @@ export default function AdminProductsPage({ authUser }) {
               {saving
                 ? "Wird gespeichert…"
                 : editingId
-                ? "Änderungen speichern"
-                : "Produkt anlegen"}
+                  ? "Änderungen speichern"
+                  : "Produkt anlegen"}
             </button>
             {editingId && (
               <button

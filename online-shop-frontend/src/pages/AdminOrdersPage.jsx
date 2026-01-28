@@ -7,16 +7,7 @@ export default function AdminOrdersPage({ authUser }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  if (!isAdmin) {
-    return (
-      <div className="card">
-        <h2>Kein Zugriff</h2>
-        <p className="info-text">
-          Dieser Bereich ist nur für Administratoren (Rolle ADMIN) sichtbar.
-        </p>
-      </div>
-    );
-  }
+
 
   useEffect(() => {
     const load = async () => {
@@ -41,8 +32,10 @@ export default function AdminOrdersPage({ authUser }) {
       }
     };
 
-    load();
-  }, [authUser.token]);
+    if (isAdmin) {
+      load();
+    }
+  }, [isAdmin, authUser]);
 
   const summary = useMemo(() => {
     if (!orders || orders.length === 0) return { count: 0, total: 0 };
@@ -57,6 +50,17 @@ export default function AdminOrdersPage({ authUser }) {
     }, 0);
     return { count, total };
   }, [orders]);
+
+  if (!isAdmin) {
+    return (
+      <div className="card">
+        <h2>Kein Zugriff</h2>
+        <p className="info-text">
+          Dieser Bereich ist nur für Administratoren (Rolle ADMIN) sichtbar.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>
