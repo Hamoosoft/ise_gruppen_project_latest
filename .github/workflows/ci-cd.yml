@@ -83,8 +83,6 @@ jobs:
         with:
           languages: java, javascript
 
-      # ❌ KEIN Autobuild (du hast mehrere Projekte!)
-      # ✅ Custom Builds:
       - name: Build Backend for CodeQL
         working-directory: ./Online-Shop-backend
         run: mvn -B -DskipTests clean package
@@ -101,7 +99,7 @@ jobs:
     name: Build & Push Docker Images to GHCR
     runs-on: ubuntu-latest
     needs: [backend, frontend, security]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: read
       packages: write
@@ -120,7 +118,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Lowercase Repo Name
-        run: echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+        run: echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Build & Push Backend Image
         uses: docker/build-push-action@v6
@@ -143,41 +141,40 @@ jobs:
           push: true
           tags: ghcr.io/${{ env.REPO_LC }}/onlineshop-frontend:latest
 
+
   deploy:
     name: Deploy to Kubernetes (CD)
     runs-on: ubuntu-latest
     needs: ghcr
-    if: github.ref == 'refs/heads/main' && secrets.KUBE_CONFIG != ''
-    
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Stop if KUBE_CONFIG secret missing
+        run: |
+          if [ -z "${{ secrets.KUBE_CONFIG }}" ]; then
+            echo "KUBE_CONFIG secret is not set. Skipping deploy."
+            exit 0
+          fi
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
 
-      # Voraussetzung: KUBE_CONFIG Secret muss in GitHub gesetzt sein!
       - name: Set Kubernetes Context
         uses: azure/k8s-set-context@v3
-        continue-on-error: true # Damit Pipeline nicht rot wird ohne Secret (Demo-Zweck)
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
 
       - name: Deploy to Cluster
-        continue-on-error: true
-        env:
-           REPO_LC: ${{ github.repository }} # Fallback or needs lowercase logic again if strictly required, but usually deploy job runs on new shell. simpler is to re-run lowercase or just use github.repository if kubectl doesn't care about casing (but kubectl set image DOES care about image name validity).
-           # Wait, kubectl set image expects the IMAGE name. The image name in registry MUST be lowercase.
-           # So I must lowercase it again here or use outputs.
         run: |
           REPO_LC=${GITHUB_REPOSITORY,,}
-          # Apply Configs & Secrets first (if any changed)
-          kubectl apply -f Kubernetes/deployments/ --recursive || echo "Simulating apply..."
-          
-          # Force Rolling Update with new Image
-          kubectl set image deployment/backend backend=ghcr.io/${{ env.REPO_LC }}/onlineshop-backend:latest
-          kubectl set image deployment/paymentservice paymentservice=ghcr.io/${{ env.REPO_LC }}/payment-service:latest
-          kubectl set image deployment/frontend frontend=ghcr.io/${{ env.REPO_LC }}/onlineshop-frontend:latest
-          
-          # Verify Rollout
-          # kubectl rollout status deployment/backend
+
+          # Apply Kubernetes manifests
+          kubectl apply -f Kubernetes/deployments/ --recursive
+
+          # Force rolling update with latest images
+          kubectl set image deployment/backend backend=ghcr.io/$REPO_LC/onlineshop-backend:latest
+          kubectl set image deployment/paymentservice paymentservice=ghcr.io/$REPO_LC/payment-service:latest
+          kubectl set image deployment/frontend frontend=ghcr.io/$REPO_LC/onlineshop-frontend:latest
