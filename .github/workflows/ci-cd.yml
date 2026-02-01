@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI Pipeline
 
 on:
   push:
@@ -140,41 +140,3 @@ jobs:
           context: ./online-shop-frontend
           push: true
           tags: ghcr.io/${{ env.REPO_LC }}/onlineshop-frontend:latest
-
-
-  deploy:
-    name: Deploy to Kubernetes (CD)
-    runs-on: ubuntu-latest
-    needs: ghcr
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Stop if KUBE_CONFIG secret missing
-        run: |
-          if [ -z "${{ secrets.KUBE_CONFIG }}" ]; then
-            echo "KUBE_CONFIG secret is not set. Skipping deploy."
-            exit 0
-          fi
-
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-
-      - name: Set Kubernetes Context
-        uses: azure/k8s-set-context@v3
-        with:
-          method: kubeconfig
-          kubeconfig: ${{ secrets.KUBE_CONFIG }}
-
-      - name: Deploy to Cluster
-        run: |
-          REPO_LC=${GITHUB_REPOSITORY,,}
-
-          # Apply Kubernetes manifests
-          kubectl apply -f Kubernetes/deployments/ --recursive
-
-          # Force rolling update with latest images
-          kubectl set image deployment/backend backend=ghcr.io/$REPO_LC/onlineshop-backend:latest
-          kubectl set image deployment/paymentservice paymentservice=ghcr.io/$REPO_LC/payment-service:latest
-          kubectl set image deployment/frontend frontend=ghcr.io/$REPO_LC/onlineshop-frontend:latest
