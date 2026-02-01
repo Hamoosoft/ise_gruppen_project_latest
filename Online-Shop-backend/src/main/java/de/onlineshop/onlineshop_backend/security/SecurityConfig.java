@@ -29,6 +29,7 @@ public class SecurityConfig {
                 }) // CORS aktivieren, Details via CorsConfig
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/products/**").permitAll() // Lesen für alle
                         // .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("ADMIN") //
