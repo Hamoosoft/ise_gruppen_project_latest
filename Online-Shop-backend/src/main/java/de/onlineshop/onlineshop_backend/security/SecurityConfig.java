@@ -32,8 +32,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/products/**").permitAll() // Lesen für alle
-                        // .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("ADMIN") //
-                        // Optional
+                        // .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
 
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
