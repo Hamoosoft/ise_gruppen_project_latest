@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: ise-shop-staging
+data:
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/onlineshop_db
+  SPRING_RABBITMQ_HOST: rabbitmq
+  SPRING_RABBITMQ_PORT: "5672"
+  SERVER_PORT: "9090"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: paymentservice-config
+  namespace: ise-shop-staging
+data:
+  SPRING_RABBITMQ_HOST: rabbitmq
+  SPRING_RABBITMQ_PORT: "5672"
