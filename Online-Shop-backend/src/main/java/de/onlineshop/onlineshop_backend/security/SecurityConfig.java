@@ -31,9 +31,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers("/actuator/info").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()                      
                         .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers("/api/orders/**").permitAll() // aktuell vielleicht noch frei
+                        .requestMatchers("/api/users/**").permitAll()
+                        .requestMatchers("/api/addresses/**").permitAll()
                         .anyRequest().authenticated()
+                    
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
